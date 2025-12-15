@@ -4,11 +4,11 @@
 
 ### Git 변경 사항(Diff) 감지 및 추출하기
 
-- [ ] 현재 스테이징된 변경 사항(git diff --staged) 가져오기
-    - [ ] System.Diagnostics.Process를 활용해 Git 명령어 실행하기
-    - [ ] ⚠️ Git이 설치되어 있지 않은 경우 예외가 발생한다.
-    - [ ] ⚠️ 스테이징된 파일이 없는 경우 예외가 발생한다.
-    - [ ] ⚠️ Diff 내용이 토큰 제한을 넘는 경우 예외가 발생한다.
+- [x] 현재 스테이징된 변경 사항(git diff --staged) 가져오기
+    - [x] System.Diagnostics.Process를 활용해 Git 명령어 실행하기
+    - [x] ⚠️ Git이 설치되어 있지 않은 경우 예외가 발생한다.
+    - [x] ⚠️ 스테이징된 파일이 없는 경우 예외가 발생한다.
+    - [x] ⚠️ Diff 내용이 토큰 제한을 넘는 경우 예외가 발생한다.
 
 ### AI 커밋 메시지 생성하기 (Default: gemini)
 
