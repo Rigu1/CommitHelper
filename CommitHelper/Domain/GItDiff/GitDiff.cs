@@ -1,18 +1,40 @@
+using CommitHelper.Domain.GitDiff.Constants;
+
 namespace CommitHelper.Domain.GitDiff;
 
 public sealed class GitDiff
 {
-    private const int MaxContentLength = 1000;
     public string Content { get; }
 
     public GitDiff(string content)
     {
-        if (string.IsNullOrWhiteSpace(content))
-            throw new ArgumentException("스테이징된 변경 사항이 없습니다.", nameof(content));
-
-        if (content.Length > MaxContentLength)
-            throw new ArgumentException($"변경 사항이 너무 많습니다. (길이: {content.Length})", nameof(content));
-
+        Validate(content);
         Content = content;
+    }
+
+    private static void Validate(string content)
+    {
+        EnsureContentIsNotEmpty(content);
+        EnsureContentIsNotTooLong(content);
+    }
+
+    private static void EnsureContentIsNotEmpty(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            throw new ArgumentException(GitDiffConstants.ErrorEmptyContent, nameof(content));
+        }
+    }
+
+    private static void EnsureContentIsNotTooLong(string content)
+    {
+        if (content.Length <= GitDiffConstants.MaxContentLength) return;
+
+        var errorMessage = string.Format(
+            GitDiffConstants.ErrorTooLongContentFormat,
+            content.Length,
+            GitDiffConstants.MaxContentLength
+        );
+        throw new ArgumentException(errorMessage, nameof(content));
     }
 }
