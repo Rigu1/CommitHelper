@@ -1,4 +1,4 @@
-namespace CommitHelper.Domain.GitDiff;
+namespace CommitHelper.Domain.Staging.Repository;
 
 public interface IGitDiffRepository
 {

@@ -1,7 +1,8 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using CommitHelper.Domain.Exceptions;
-using CommitHelper.Domain.GitDiff;
+using CommitHelper.Domain.Staging;
+using CommitHelper.Domain.Staging.Repository;
 using CommitHelper.Infra.Common;
 using CommitHelper.Infra.Common.Dto;
 using CommitHelper.Infra.Git.Constants;

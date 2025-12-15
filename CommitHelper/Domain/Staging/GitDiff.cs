@@ -1,6 +1,6 @@
-using CommitHelper.Domain.GitDiff.Constants;
+using CommitHelper.Domain.Staging.Constants;
 
-namespace CommitHelper.Domain.GitDiff;
+namespace CommitHelper.Domain.Staging;
 
 public sealed class GitDiff
 {
@@ -30,11 +30,8 @@ public sealed class GitDiff
     {
         if (content.Length <= GitDiffConstants.MaxContentLength) return;
 
-        var errorMessage = string.Format(
-            GitDiffConstants.ErrorTooLongContentFormat,
-            content.Length,
-            GitDiffConstants.MaxContentLength
-        );
+        var errorMessage = GitDiffErrors.TooLongContent(content.Length, GitDiffConstants.MaxContentLength);
+
         throw new ArgumentException(errorMessage, nameof(content));
     }
 }
