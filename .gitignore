@@ -1,0 +1,24 @@
+# 1. Build Results
+[Bb]in/
+[Oo]bj/
+
+# 2. IDE Files
+.idea/
+.vs/
+.vscode/
+*.user
+*.suo
+*.userprefs
+*.sln.docstates
+
+# 3. OS Specific Files
+.DS_Store
+Thumbs.db
+
+# 4. Security
+appsettings.json
+secrets.json
+.env
+
+# 5. Logs
+*.log
