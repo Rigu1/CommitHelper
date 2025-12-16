@@ -1,7 +1,7 @@
 using CommitHelper.Domain.Exceptions;
 using CommitHelper.Domain.Staging;
-using CommitHelper.Domain.Staging.Repository; // 네임스페이스 확인 필요
-using CommitHelper.Domain.Staging.Service;    // 네임스페이스 확인 필요
+using CommitHelper.Domain.Staging.Repository;
+using CommitHelper.Domain.Staging.Services;
 using Moq;
 
 namespace CommitHelper.Tests.Domain.Staging.Service;

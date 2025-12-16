@@ -1,6 +1,6 @@
 using CommitHelper.Domain.Staging.Repository;
 
-namespace CommitHelper.Domain.Staging.Service;
+namespace CommitHelper.Domain.Staging.Services;
 
 public class GitDiffService(IGitDiffRepository repository)
 {
