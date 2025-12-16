@@ -1,4 +1,4 @@
-using CommitHelper.Domain.Commit.repository;
+using CommitHelper.Domain.Commit.Repository;
 
 namespace CommitHelper.Domain.Commit.Services;
 

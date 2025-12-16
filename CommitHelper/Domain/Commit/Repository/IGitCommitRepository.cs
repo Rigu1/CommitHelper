@@ -1,4 +1,4 @@
-namespace CommitHelper.Domain.Commit.repository;
+namespace CommitHelper.Domain.Commit.Repository;
 
 public interface IGitCommitRepository
 {
