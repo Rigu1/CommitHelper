@@ -2,7 +2,8 @@ using CommitHelper.Domain.Exceptions;
 using CommitHelper.Infra.Common;
 using CommitHelper.Infra.Common.Dto;
 using System.Diagnostics;
-using CommitHelper.Domain.Commit.repository;
+using CommitHelper.Domain.Commit.Repository;
+using CommitHelper.Infra.Repositories.Git.Constants;
 
 namespace CommitHelper.Infra.Repositories.Git;
 
@@ -10,30 +11,43 @@ public class GitCommitRepository(IProcessExecutor processExecutor) : IGitCommitR
 {
     public async Task CommitAsync(string message)
     {
-        var escapedMessage = message.Replace("\"", "\\\"");
-        var arguments = $"commit -m \"{escapedMessage}\"";
+        var arguments = CreateCommitArguments(message);
 
         var startInfo = new ProcessStartInfo
         {
-            FileName = "git",
+            FileName = GitConstants.Command,
             Arguments = arguments
         };
 
-        ProcessResult result;
+        var result = await ExecuteProcessAndHandleInfraError(startInfo);
+
+        EnsureCommitSuccess(result);
+    }
+
+    private static string CreateCommitArguments(string message)
+    {
+        var escapedMessage = message.Replace("\"", "\\\"");
+        return $"{GitConstants.ArgsCommit} \"{escapedMessage}\"";
+    }
+
+    private async Task<ProcessResult> ExecuteProcessAndHandleInfraError(ProcessStartInfo startInfo)
+    {
         try
         {
-            result = await processExecutor.RunAsync(startInfo, CancellationToken.None);
+            return await processExecutor.RunAsync(startInfo, CancellationToken.None);
         }
         catch (Exception ex)
         {
-            throw new GitCommitException($"Git commit 명령 실행 중 인프라 오류: {ex.Message}");
+            throw new GitCommitException($"{GitConstants.InfraExecutionError}: {ex.Message}");
         }
+    }
 
+    private static void EnsureCommitSuccess(ProcessResult result)
+    {
         if (result.ExitCode != 0)
         {
             throw new GitCommitException(
-                $"Git commit 실패 (Exit Code: {result.ExitCode})." +
-                $"\nError Details: {result.Error}"
+                GitConstants.CommitFailed(result.ExitCode, result.Error)
             );
         }
     }
