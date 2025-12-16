@@ -30,7 +30,7 @@ public sealed class GitDiff
     {
         if (content.Length <= GitDiffConstants.MaxContentLength) return;
 
-        var errorMessage = GitDiffErrors.TooLongContent(content.Length, GitDiffConstants.MaxContentLength);
+        var errorMessage = GitDiffConstants.TooLongContent(content.Length, GitDiffConstants.MaxContentLength);
 
         throw new ArgumentException(errorMessage, nameof(content));
     }

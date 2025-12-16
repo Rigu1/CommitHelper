@@ -5,7 +5,7 @@ using CommitHelper.Domain.Staging;
 using CommitHelper.Domain.Staging.Repository;
 using CommitHelper.Infra.Common;
 using CommitHelper.Infra.Common.Dto;
-using CommitHelper.Infra.Git.Constants;
+using CommitHelper.Infra.Repositories.Git.Constants;
 
 namespace CommitHelper.Infra.Repositories.Git;
 
@@ -49,7 +49,7 @@ public class GitDiffRepository(IProcessExecutor executor, string workingDirector
     {
         if (result.ExitCode != 0)
         {
-            throw new InvalidOperationException(GitErrors.CommandFailed(result.Error));
+            throw new InvalidOperationException(GitConstants.CommandFailed(result.Error));
         }
     }
 }
