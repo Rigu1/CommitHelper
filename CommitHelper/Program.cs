@@ -8,7 +8,6 @@ using CommitHelper.Domain.Staging.Services;
 using CommitHelper.Domain.Staging.Converter;
 using CommitHelper.Infra.Common;
 using CommitHelper.Infra.Repositories.Git;
-using CommitHelper.Presentation.View;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -18,6 +17,7 @@ using System.IO;
 using CommitHelper.Infra.Adapters;
 using CommitHelper.Infra.Repositories.AI;
 using CommitHelper.Presentation;
+using CommitHelper.Presentation.UI;
 
 namespace CommitHelper;
 
@@ -30,7 +30,7 @@ public class Program
 
         ConfigureServices(services, configuration);
 
-        using var serviceProvider = services.BuildServiceProvider();
+        await using var serviceProvider = services.BuildServiceProvider();
 
         var controller = serviceProvider.GetRequiredService<CommitController>();
         await controller.RunAsync();
@@ -38,7 +38,7 @@ public class Program
 
     private static IConfiguration ConfigureConfiguration()
     {
-        string projectRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
+        var projectRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", ".."));
 
         return new ConfigurationBuilder()
             .SetBasePath(projectRoot)

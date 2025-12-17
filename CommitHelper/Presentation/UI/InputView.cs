@@ -1,4 +1,4 @@
-namespace CommitHelper.Presentation.View;
+namespace CommitHelper.Presentation.UI;
 
 public class InputView
 {
