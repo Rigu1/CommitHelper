@@ -1,5 +1,3 @@
-// CommitHelper.Tests.Domain.MessageGeneration.Service/AICommitMessageServiceTests.cs
-
 using CommitHelper.Configuration;
 using CommitHelper.Domain.Exceptions;
 using CommitHelper.Domain.MessageGeneration;
@@ -12,7 +10,6 @@ namespace CommitHelper.Tests.Domain.MessageGeneration.Services;
 public class AICommitMessageServiceTests
 {
     private readonly Mock<IAICommitMessageRepository> _aiRepositoryMock;
-    private readonly AiSettings _testAiSettings;
     private readonly AICommitMessageService _service;
 
     private const string MockFormattedDiff =
@@ -25,7 +22,7 @@ public class AICommitMessageServiceTests
     {
         _aiRepositoryMock = new Mock<IAICommitMessageRepository>(MockBehavior.Strict);
 
-        _testAiSettings = new AiSettings
+        var testAiSettings = new AiSettings
         {
             ApiKey = "test_key",
             ModelType = "test-model",
@@ -34,7 +31,7 @@ public class AICommitMessageServiceTests
 
         _service = new AICommitMessageService(
             _aiRepositoryMock.Object,
-            _testAiSettings
+            testAiSettings
         );
     }
 
