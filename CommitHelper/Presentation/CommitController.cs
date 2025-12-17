@@ -3,96 +3,27 @@ using CommitHelper.Domain.Commit.Services;
 using CommitHelper.Domain.Exceptions;
 using CommitHelper.Domain.MessageGeneration.Services;
 using CommitHelper.Domain.Staging.Services;
-using CommitHelper.Presentation.View;
+using CommitHelper.Presentation.Constants;
+using CommitHelper.Presentation.UI;
 
 namespace CommitHelper.Presentation;
 
 public class CommitController(
-    GitDiffService diffService,
-    AICommitMessageService aiMessageService,
     OutputView outputView,
     InputView inputView,
+    GitDiffService diffService,
+    AICommitMessageService aiMessageService,
     GitCommitService commitService)
 {
-    private void HandleError(Exception ex)
-    {
-        switch (ex)
-        {
-            case GitNotFoundException:
-                outputView.WriteLine("\n[ERROR] Git 실행 파일을 찾을 수 없습니다.", ConsoleColor.Red);
-                break;
-            case AiAuthenticationException authEx:
-                outputView.WriteLine($"\n[ERROR] AI 인증 실패: {authEx.Message}", ConsoleColor.Red);
-                break;
-            case GitCommitException commitEx:
-                outputView.WriteLine($"\n[ERROR] 커밋 실행 실패: {commitEx.Message}", ConsoleColor.Red);
-                break;
-            case ArgumentException argEx when (argEx.ParamName == nameof(CommitMessage)):
-                outputView.WriteLine($"\n[ERROR] 메시지 유효성 오류: {argEx.Message}", ConsoleColor.Red);
-                break;
-            default:
-                outputView.WriteLine($"\n[ERROR] 예기치 않은 오류 발생: {ex.Message}", ConsoleColor.Red);
-                break;
-        }
-    }
-
     public async Task RunAsync(CancellationToken ct = default)
     {
         try
         {
-            outputView.WriteLine("🚀 Staged Diff 분석 및 메시지 생성 중...");
+            var diff = await FetchDiffContentAsync(ct);
+            if (diff == null) return;
 
-            var formattedDiff = await diffService.GetDiffAsAiPromptAsync(ct);
-
-            if (string.IsNullOrWhiteSpace(formattedDiff))
-            {
-                outputView.WriteLine("[WARN] 커밋할 Staged 변경 사항이 없습니다.", ConsoleColor.Yellow);
-                return;
-            }
-
-            var generatedMessage = await aiMessageService.GenerateMessageAsync(formattedDiff, ct);
-            string currentMessage = generatedMessage.Value;
-
-            while (true)
-            {
-                DisplayCommitMessage(currentMessage);
-
-                outputView.WriteEmptyLine();
-                outputView.WriteLine("👉 동작을 선택하세요 (y: 커밋 실행, n: 종료, m: 메시지 수정):", ConsoleColor.Cyan);
-
-                string choice = inputView.ReadLine().ToLower().Trim();
-
-                if (choice == "y")
-                {
-                    await ExecuteCommitAsync(currentMessage);
-                    outputView.WriteLine("\n🎉 커밋이 성공적으로 완료되었습니다.", ConsoleColor.Green);
-                    break;
-                }
-                else if (choice == "m")
-                {
-                    outputView.WriteEmptyLine();
-                    outputView.WriteLine("✏️ 수정할 메시지를 입력하세요 (입력 후 Enter):", ConsoleColor.Yellow);
-                    string edited = inputView.ReadLine().Trim();
-
-                    if (!string.IsNullOrWhiteSpace(edited))
-                    {
-                        currentMessage = edited;
-                    }
-                    else
-                    {
-                        outputView.WriteLine("[ERROR] 메시지는 비어있을 수 없습니다.", ConsoleColor.Red);
-                    }
-                }
-                else if (choice == "n")
-                {
-                    outputView.WriteLine("👋 커밋을 취소하고 종료합니다.", ConsoleColor.Gray);
-                    break;
-                }
-                else
-                {
-                    outputView.WriteLine("[ERROR] 잘못된 입력입니다. (y/n/m 중 선택)", ConsoleColor.Red);
-                }
-            }
+            var aiMessage = await GenerateAiMessageAsync(diff, ct);
+            await ProcessUserDecisionLoopAsync(aiMessage, ct);
         }
         catch (Exception ex)
         {
@@ -100,21 +31,112 @@ public class CommitController(
         }
     }
 
-    private void DisplayCommitMessage(string message)
+    private async Task<string?> FetchDiffContentAsync(CancellationToken ct)
     {
-        outputView.WriteEmptyLine();
-        outputView.WriteLine("✨ 생성된 커밋 메시지:", ConsoleColor.Green);
-        outputView.WriteLine("--------------------------------------------------");
-        outputView.WriteLine(message);
-        outputView.WriteLine("--------------------------------------------------");
+        outputView.WriteLine(UIConstants.Message.AnalyzingDiff);
+        var diff = await diffService.GetDiffAsAiPromptAsync(ct);
+
+        if (!string.IsNullOrWhiteSpace(diff)) return diff;
+
+        outputView.WriteLine(UIConstants.Message.NoStagedChanges, ConsoleColor.Yellow);
+        return null;
     }
 
-    private async Task ExecuteCommitAsync(string message)
+    private async Task<string> GenerateAiMessageAsync(string diff, CancellationToken ct)
     {
-        outputView.WriteLine("⚙️ Git 커밋 명령 실행 중...", ConsoleColor.Gray);
+        var response = await aiMessageService.GenerateMessageAsync(diff, ct);
+        return response.Value;
+    }
 
-        var commitMessageVo = new CommitMessage(message);
+    private async Task ProcessUserDecisionLoopAsync(string initialMessage, CancellationToken ct)
+    {
+        var isResolved = false;
 
-        await commitService.CommitAsync(commitMessageVo);
+        while (!isResolved)
+        {
+            DisplayPreview(initialMessage);
+            var choice = GetUserChoice();
+            isResolved = await HandleUserCommandAsync(choice, initialMessage, ct);
+        }
+    }
+
+    private string GetUserChoice()
+    {
+        outputView.WriteEmptyLine();
+        outputView.WriteLine(UIConstants.Message.SelectAction, ConsoleColor.Cyan);
+        return inputView.ReadLine().ToLower().Trim();
+    }
+
+    private async Task<bool> HandleUserCommandAsync(string choice, string message, CancellationToken ct)
+    {
+        return choice switch
+        {
+            UIConstants.Command.Yes => await ExecuteCommitAndFinalizeAsync(message),
+            UIConstants.Command.No => CancelAndFinalize(),
+            UIConstants.Command.Modify => ModifyMessage(ref message),
+            _ => ShowInvalidAndContinue()
+        };
+    }
+
+    private async Task<bool> ExecuteCommitAndFinalizeAsync(string message)
+    {
+        outputView.WriteLine(UIConstants.Message.Committing, ConsoleColor.Gray);
+        await commitService.CommitAsync(new CommitMessage(message));
+        outputView.WriteLine(UIConstants.Message.CommitSuccess, ConsoleColor.Green);
+        return true; // 루프 종료
+    }
+
+    private bool CancelAndFinalize()
+    {
+        outputView.WriteLine(UIConstants.Message.CommitCancelled, ConsoleColor.Gray);
+        return true;
+    }
+
+    private bool ModifyMessage(ref string message)
+    {
+        outputView.WriteEmptyLine();
+        outputView.WriteLine(UIConstants.Message.InputModifyMessage, ConsoleColor.Yellow);
+
+        var edited = inputView.ReadLine().Trim();
+        if (!string.IsNullOrWhiteSpace(edited))
+        {
+            message = edited;
+        }
+        else
+        {
+            outputView.WriteLine(UIConstants.Message.EmptyMessageError, ConsoleColor.Red);
+        }
+
+        return false;
+    }
+
+    private bool ShowInvalidAndContinue()
+    {
+        outputView.WriteLine(UIConstants.Message.InvalidInput, ConsoleColor.Red);
+        return false;
+    }
+
+    private void DisplayPreview(string message)
+    {
+        outputView.WriteEmptyLine();
+        outputView.WriteLine(UIConstants.Message.GeneratedHeader, ConsoleColor.Green);
+        outputView.WriteLine(UIConstants.Message.Divider);
+        outputView.WriteLine(message);
+        outputView.WriteLine(UIConstants.Message.Divider);
+    }
+
+    private void HandleError(Exception ex)
+    {
+        var errorMessage = ex switch
+        {
+            GitNotFoundException => UIConstants.Error.GitNotFound,
+            AiAuthenticationException authEx => $"{UIConstants.Error.AiAuthFailed}{authEx.Message}",
+            GitCommitException commitEx => $"{UIConstants.Error.CommitFailed}{commitEx.Message}",
+            ArgumentException { ParamName: "value" } argEx =>
+                $"{UIConstants.Error.MessageValidationError}{argEx.Message}",
+            _ => $"{UIConstants.Error.UnexpectedError}{ex.Message}"
+        };
+
+        outputView.WriteLine(errorMessage, ConsoleColor.Red);
     }
 }
