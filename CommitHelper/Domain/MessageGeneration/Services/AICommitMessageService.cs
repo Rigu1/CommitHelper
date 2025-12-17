@@ -1,4 +1,5 @@
 using CommitHelper.Configuration;
+using CommitHelper.Domain.MessageGeneration.Constants;
 using CommitHelper.Domain.MessageGeneration.Repository;
 
 namespace CommitHelper.Domain.MessageGeneration.Services;
@@ -11,7 +12,7 @@ public class AICommitMessageService(
     {
         if (string.IsNullOrWhiteSpace(diffContent))
         {
-            throw new InvalidOperationException("커밋 메시지 생성에 필요한 Git Diff 내용이 없습니다.");
+            throw new InvalidOperationException(MessageGenerationConstants.ErrorNoDiffContent);
         }
 
         var formattedDiff = diffContent.Trim();
